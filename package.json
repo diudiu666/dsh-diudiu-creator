@@ -1,0 +1,45 @@
+{
+  "name": "dsh-diudiu-creator",
+  "version": "0.1.0",
+  "description": "为 DSH 增加「创造模式」agent 预设：内置 cordis 预设的副本，仅移除 skill-filesystem 中指向 app.asar 内部路径的 customSkillDirs，让技能根回落到默认（项目技能根 + <DSH_HOME>/skills）。An agent preset that restores default skill roots.",
+  "type": "module",
+  "files": [
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diudiu666/dsh-diudiu-creator.git"
+  },
+  "homepage": "https://github.com/diudiu666/dsh-diudiu-creator#readme",
+  "bugs": {
+    "url": "https://github.com/diudiu666/dsh-diudiu-creator/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "agent-preset",
+    "skills"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test",
+    "pack:check": "node scripts/check-pack.mjs"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "engines": {
+      "dsh": ">=0.2.0-rc.1"
+    }
+  }
+}
