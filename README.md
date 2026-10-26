@@ -19,12 +19,14 @@ createRequire(baseUrl).resolve('@deepseek-ai/dsh-agent-preset/package.json') + '
 装到**桌面** profile（预设要在桌面端的会话里选）：
 
 ```bash
-# 从 npm 安装
+# 从 npm 安装（已发布 0.1.0，npmjs 与 npmmirror 均可）
 dsh plugin --profile desktop add dsh-diudiu-creator
 
 # 或直接从 GitHub 安装
 dsh plugin --profile desktop add https://github.com/diudiu666/dsh-diudiu-creator
 ```
+
+npm 页面：<https://www.npmjs.com/package/dsh-diudiu-creator>
 
 `dsh` 是 DSH Desktop 自带的 CLI：
 
