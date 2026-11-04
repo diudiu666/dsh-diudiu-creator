@@ -1,8 +1,8 @@
 /**
  * Structural checks for the bundle patch. These run without a DSH installation:
  * they verify that the YAML dialect in the patch is parseable, that the preset
- * row keeps its stable ids, and that the shipped package actually names the
- * patch file.
+ * keeps the ids the registry and dsh-ops key off, and that the shipped package
+ * actually names the patch file.
  *
  * The `!!js` tag is DSH's "evaluate this expression at load time" scalar. For
  * parsing purposes it is kept as a tagged placeholder; the real evaluation is
@@ -28,34 +28,35 @@ const schema = yaml.DEFAULT_SCHEMA.extend([JsExpression]);
 
 const patch = yaml.load(readFileSync(join(root, "cordis.patch.yml"), "utf8"), { schema });
 
-const insert = patch?.[0]?.insert;
-const row = insert?.[0];
-const preset = row?.config;
+const override = patch.find((entry) => entry.id === "preset-cordis");
+const preset = override?.config;
 
 test("the package declares the patch as its bundle layer", () => {
 	assert.equal(pkg.dsh?.bundle?.patch, "./cordis.patch.yml");
 	assert.ok(pkg.files?.includes("cordis.patch.yml"), "files must ship the patch");
-	assert.equal(pkg.dsh?.engines?.dsh, ">=0.2.0-rc.1");
+	assert.equal(pkg.version, "0.2.0");
+	assert.equal(pkg.dsh?.engines?.dsh, ">=0.2.1-rc.1 <0.3.0");
 });
 
-test("the patch is one insert list holding exactly one preset row", () => {
+test("the patch rewrites the shipped cordis row in place", () => {
 	assert.ok(Array.isArray(patch), "top level is a patch list");
 	assert.equal(patch.length, 1);
-	assert.ok(Array.isArray(insert), "new rows must arrive through insert:");
-	assert.equal(insert.length, 1);
-	assert.equal(row.id, "preset-cordis-skills");
-	assert.equal(row.name, "@deepseek-ai/dsh-agent-preset");
+	assert.ok(override, "an id-targeted entry must target preset-cordis");
+	assert.equal(override.insert, undefined, "the override carries no insert list");
+	assert.ok(!patch.some((entry) => Array.isArray(entry.insert)), "0.2.0 inserts no preset of its own");
+	assert.equal(preset.id, "cordis", "the preset id must stay cordis for dsh-ops mode matching");
 });
 
-test("the preset keeps its stable identity", () => {
-	assert.equal(preset.id, "cordis-skills");
+test("the preset keeps its display identity", () => {
 	assert.match(preset.name, /创造模式/);
 	assert.equal(typeof preset.order, "number");
 	assert.ok(preset.description.length > 10);
 });
 
 test("every plugin row has an id and a name, groups hold a list", () => {
-	assert.ok(Array.isArray(preset.plugins) && preset.plugins.length > 10);
+	assert.ok(Array.isArray(preset.plugins) && preset.plugins.length > 20);
+	const ids = preset.plugins.map((p) => p.id);
+	assert.equal(new Set(ids).size, ids.length, "plugin ids must be unique inside one preset");
 	for (const plugin of preset.plugins) {
 		assert.equal(typeof plugin.id, "string", `row ${JSON.stringify(plugin).slice(0, 60)} needs an id`);
 		assert.equal(typeof plugin.name, "string", `row ${plugin.id} needs a name`);
@@ -70,15 +71,45 @@ test("the skill filesystem row drops the app.asar-scoped customSkillDirs", () =>
 	assert.ok(row, "skill-filesystem row is present");
 	assert.equal(row.name, "@deepseek-ai/dsh-skill-filesystem");
 	assert.equal(row.config, undefined, "no config means the default skill roots are used");
+	assert.ok(!JSON.stringify(preset).includes("customSkillDirs"), "the broken root must not come back");
 });
 
-test("the tools that make this preset a creator mode are present", () => {
+test("the preset tracks the shipped cordis rows it has to keep in sync", () => {
 	const ids = preset.plugins.map((p) => p.id);
-	for (const id of ["tool-fs", "tool-fs-search", "tool-web", "tool-cordis", "tool-skill", "tool-todo"]) {
+	for (const id of [
+		"persona",
+		"agent-instructions",
+		"time-context",
+		"tool-fs",
+		"tool-fs-search",
+		"tool-schedule",
+		"tool-web",
+		"tool-cordis",
+		"tool-skill",
+		"tool-todo",
+		"present",
+		"tool-plugin-manager",
+		"tool-plugin-market",
+	]) {
 		assert.ok(ids.includes(id), `expected row ${id}`);
 	}
 	const groups = preset.plugins.filter((p) => p.group === true).map((p) => p.id);
 	assert.deepEqual(groups.sort(), ["compaction", "delegation", "planning"]);
+});
+
+test("presets this project no longer ships stay gone", () => {
+	const ids = preset.plugins.map((p) => p.id);
+	for (const id of ["tool-subagent-codex", "tool-subagent-claude-code", "tool-ralph"]) {
+		assert.ok(!ids.includes(id), `row ${id} was removed upstream; do not reintroduce it`);
+	}
+});
+
+test("the tool result pruner is tighter than the shipped default", () => {
+	const compaction = preset.plugins.find((p) => p.id === "compaction");
+	const pruner = compaction.config.find((p) => p.id === "tool-result-pruner");
+	assert.equal(pruner.config.thresholdChars, 4096);
+	assert.equal(pruner.config.headChars, 2048);
+	assert.equal(pruner.config.tailChars, 1024);
 });
 
 test("platform-conditional rows use the !!js tag instead of being hardcoded", () => {
@@ -86,4 +117,6 @@ test("platform-conditional rows use the !!js tag instead of being hardcoded", ()
 	const pwsh = preset.plugins.find((p) => p.id === "tool-pwsh");
 	assert.equal(typeof bash.disabled?.$js, "string");
 	assert.equal(typeof pwsh.disabled?.$js, "string");
+	const manager = preset.plugins.find((p) => p.id === "tool-plugin-manager");
+	assert.equal(typeof manager.disabled?.$js, "string");
 });

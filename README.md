@@ -1,8 +1,15 @@
 # dsh-diudiu-creator
 
-给 **DSH** 增加一个 agent 预设 **「创造模式」**：它内置 `cordis` 预设的完整副本，**只改一处**——把 `skill-filesystem` 里指向 `app.asar` 内部路径的 `customSkillDirs` 去掉，让技能根回落到默认值（项目技能根 `100/200`、用户根 `<DSH_HOME>/skills` `400`）。
+给 **DSH** 增加一个 agent 预设 **「创造模式」**。它不是另起一个预设，而是**原地修好内置 `cordis` 预设**，所以：
+
+- 预设 id 仍然是 `cordis`，但 `skill-filesystem` 不再指向 `app.asar` 内部路径，技能根回落到默认值（项目技能根 `100/200`、用户根 `<DSH_HOME>/skills` `400`）；
+- 因为 id 还是 `cordis`，装了 **dsh-ops** 的机器上，「创造模式」会**自动**接上 dsh-ops 的 cordis 模式与 discovery，不需要再切到 `standard` 预设。
+
+> 0.1.x 曾经用 `cordis-skills` 这个自造 id 装一份 cordis 副本。0.2.0 起改成"接管内置行"：预设只剩一个（id `cordis`），`cordis-skills` 已删除。
 
 ## 它解决什么问题
+
+### 1. 技能根（0.1.x 以来的原问题）
 
 内置 `cordis` 预设的 `skill-filesystem` 行是这样解析技能根的：
 
@@ -10,16 +17,33 @@
 createRequire(baseUrl).resolve('@deepseek-ai/dsh-agent-preset/package.json') + 'skills'
 ```
 
-`baseUrl` 指向 `app.asar` 内部，所以这个路径**永远不存在**：技能发现是空的，任何技能一调用就报 `unknown or no longer available`。本预设删掉这个键，改用 `dsh-skill-filesystem` 的默认根，于是 `~/.dsh/skills`、项目技能根里的技能都能被正确发现。
+`baseUrl` 指向 `app.asar` 内部，`createRequire(...).resolve(...)` 装载时直接抛
+`MODULE_NOT_FOUND`，于是技能发现是空的，任何技能一调用就报
+`unknown or no longer available`。本预设删掉 `customSkillDirs` 这个键，改用
+`dsh-skill-filesystem` 的默认根。（`standard` 预设本来就没有这个键，所以只有
+`cordis` 预设中招。）
 
-除这一处外，预设与内置 `cordis` 完全一致：persona、agent-instructions、fs/fs-search/jobs/web/cordis/skill/todo/ask-user 工具、`planning`/`compaction`/`delegation` 三个 group（含 plan mode、上下文压缩、subagent 与 workflow），以及 `present`、`tool-plugin-manager`。
+### 2. 接上 dsh-ops 的按需发现（0.2.0 起）
+
+dsh-ops 的文件工具是按**预设 id** 发布的（`modes/detect.js#modeOf` 只认
+`minimal` / `standard` / `ptc` / `cordis`）。自造 id 的预设永远匹配不到任何一个
+模式行，所以 0.1.x 的「创造模式」用的一直是官方 `pwsh`/`read`/`grep`，而
+`standard` 用的是 `ops_bash`/`ops_read_files`/`ops_grep`。0.2.0 让预设 id 回到
+`cordis`，于是：
+
+| dsh-ops 组件 | 对「创造模式」的效果 |
+| --- | --- |
+| `dsh-ops/mode-cordis` | 发布 `ops_read_files` / `ops_grep` / `ops_bash`，并隐藏被替换的官方 `read` / `glob` / `grep` / Windows `pwsh`（可读性校验不通过时**不隐藏**，自动回退到官方工具） |
+| `dsh-ops/discovery` | 提供 `ops_discover_tools`，高级文件/文档能力（DOCX 正文、受限 PDF 文本层、CSV/TSV 等）按需激活，不常驻工具目录 |
+
+不装 dsh-ops 也能用：那时预设就是"修好的 cordis"，只是没有 ops 工具面。
 
 ## 安装
 
 装到**桌面** profile（预设要在桌面端的会话里选）：
 
 ```bash
-# 从 npm 安装（已发布 0.1.0，npmjs 与 npmmirror 均可）
+# 从 npm 安装（0.2.0 起同时发布 npmjs 与 npmmirror）
 dsh plugin --profile desktop add dsh-diudiu-creator
 
 # 或直接从 GitHub 安装
@@ -34,11 +58,33 @@ npm 页面：<https://www.npmjs.com/package/dsh-diudiu-creator>
 & "$env:LOCALAPPDATA\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add dsh-diudiu-creator
 ```
 
-安装后**完全退出 DSH Desktop 再打开**（bundle 层在启动时装载）。装好后「创造模式」会出现在会话的预设/模式选择里；新会话默认用哪个由 `agent-preset-registry` 的 `default` / `selectedDefault` 决定。
+安装后**完全退出 DSH Desktop 再打开**（bundle 层在启动时装载）。
+
+装好后会话模式选择里只有一条：**创造模式**（`cordis`）。
+
+## 0.1.x → 0.2.0 迁移
+
+预设 id 从 `cordis-skills` 变回 `cordis`，所以 profile 里指向旧 id 的默认值要改：
+
+```yaml
+# ~/.dsh/profiles/desktop/cordis.patch.yml
+- id: agent-preset-registry
+  name: '@deepseek-ai/dsh-agent-preset-registry'
+  config:
+    default: cordis
+    selectedDefault: cordis
+```
+
+- 不改的话，新建会话会报找不到预设（`agent-preset/not-found`），或落到别的默认预设上。
+- **0.1.x 创建的历史会话不能再打开**：`cordis-skills` 这个 id 已删除，registry 的 `resolve()` 会抛
+  `agent-preset/not-found`。需要旧会话内容时直接读 `%USERPROFILE%\.dsh\sessions\` 下的会话文件；
+  若确实要临时恢复，可在 profile 里手工插一段 `id: cordis-skills` 的预设（内容与本包一致）。
 
 ## ⚠️ 与手写内联预设的冲突
 
-如果你 profile 的 `cordis.patch.yml` 里已经有一条**手写的同 id 预设**（`id: cordis-skills`，注释通常是 "added by agent"），装这个包之前**先删掉那一段**，否则注册表里会有两条同 id 预设：
+如果你 profile 的 `cordis.patch.yml` 里还留着手写的预设（`id: cordis-skills` 或 `id: cordis`，
+注释通常是 "added by agent"），**先删掉那一段**，否则注册表里会有两条同 id 预设，
+`Duplicate agent preset` 会让整条预设加载失败：
 
 ```yaml
 # 删掉这段（连同上面的注释），只保留 bundle 提供的那一份
@@ -49,13 +95,15 @@ npm 页面：<https://www.npmjs.com/package/dsh-diudiu-creator>
         id: cordis-skills
 ```
 
-行 id 保持 `preset-cordis-skills`、预设 id 保持 `cordis-skills`，所以任何把 `selectedDefault` 指向 `cordis-skills` 的配置**不需要改**。
-
 ## 兼容性
 
-- `engines.dsh >= 0.2.0-rc.1`：预设引用的插件（`dsh-tool-cordis`、`dsh-workflow-ptc`、`dsh-plugin-manager/tools` 等）都在 0.2.x 里。低于这个版本的 DSH 会拒绝安装（`incompatible-version`）。
-- 预设里的平台条件行用 `!!js` 表达式保留，**不写死平台**：`tool-bash` 在 Windows 上禁用、`tool-pwsh` 在非 Windows 上禁用；`tool-plugin-manager` 在没有 `profileContext` 时禁用。
-- 只要上游 DSH 的内置 `cordis` 预设新增了行，本预设**不会自动跟随**——它是 2026-10-15 的 `cordis` 快照。上游变化较大时建议升级本包（见 CHANGELOG）。
+- `engines.dsh: >=0.2.1-rc.1 <0.3.0`：预设里用到的 `dsh-time-context`、`dsh-tool-schedule`、`dsh-plugin-market/tools` 都在 0.2.1 里；低于这个版本的 DSH 会拒绝安装（`incompatible-version`）。
+- 预设正文是 **DSH 0.2.1-rc.5 内置 cordis 预设**的快照，仅两处有意偏离：
+  - `tool-result-pruner` 阈值收紧到 `4096 / 2048 / 1024`（上游 `8192 / 4096 / 1024`），长会话里大工具输出更早被裁剪；
+  - `tool-subagent` / `tool-subagent-fork` 显式保留 `backgroundMode: continuable`（上游省略、靠默认值）。
+- 平台条件行用 `!!js` 保留，**不写死平台**：`tool-bash` 在 Windows 上禁用、`tool-pwsh` 在非 Windows 上禁用；`tool-plugin-manager` / `tool-plugin-market` 在没有 `profileContext` 时禁用。
+- 上游 cordis 预设如果新增/删改行，本预设**不会自动跟随**——它是快照。升级前请对比 `dsh-web-app/presets/cordis.patch.yml`（在 `app.asar` 内，或 `dsh --dump-default-config` 输出）。
+- 提示：DSH 的配置装载器支持 YAML 锚点/别名，但**不支持**合并键 `<<`，不要用 `<<: *x` 复用配置。
 
 ## 卸载
 
@@ -63,23 +111,25 @@ npm 页面：<https://www.npmjs.com/package/dsh-diudiu-creator>
 dsh plugin --profile desktop remove dsh-diudiu-creator
 ```
 
-然后重启 DSH。已经用「创造模式」跑过的会话不受影响（它们的预设树已固化），只是新会话里不再出现这个选项。
+然后重启 DSH。已经用「创造模式」跑过的会话不受影响（它们的预设树已固化），只是新会话里不再出现这个选项，内置 `cordis` 预设恢复成原样（技能根仍然是坏的）。
 
 ## 开发
 
 ```bash
 npm install        # 只有测试用依赖 js-yaml
-npm test           # 解析 patch、校验行结构与预设身份
+npm test           # 解析 patch、校验预设身份/行结构/裁剪阈值
 npm run pack:check # 校验 npm pack 产物只含 patch + README
 ```
 
 真实装载验证（不需要桌面端，用隔离的 DSH_HOME）：
 
 ```powershell
-# 在临时 profile 里装本包，然后把组合后的配置树打印出来
-$dsh --dump-config --profile <临时 profile>
-# 输出里应当出现 id: preset-cordis-skills 与其下的 tool-cordis / skill-filesystem 等行
+# 把本包的 patch 叠到任意 profile 上，打印组合后的配置树
+& "$env:LOCALAPPDATA\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" `
+  --profile web --patch .\cordis.patch.yml --dump-config
 ```
+
+输出里应当能看到：`id: preset-cordis` 行被改写成 `config.id: cordis` + `name: 创造模式`，`skill-filesystem` 行没有 `customSkillDirs`，以及 `thresholdChars: 4096`；全树不应再出现 `cordis-skills`。
 
 ## 许可
 
