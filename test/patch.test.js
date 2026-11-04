@@ -34,8 +34,7 @@ const preset = override?.config;
 test("the package declares the patch as its bundle layer", () => {
 	assert.equal(pkg.dsh?.bundle?.patch, "./cordis.patch.yml");
 	assert.ok(pkg.files?.includes("cordis.patch.yml"), "files must ship the patch");
-	assert.ok(pkg.files?.includes("maintenance/"), "files must ship the maintenance templates");
-	assert.equal(pkg.version, "0.2.2");
+	assert.equal(pkg.version, "0.2.3");
 	assert.equal(pkg.dsh?.engines?.dsh, ">=0.2.1-rc.1 <0.3.0");
 });
 

@@ -4,6 +4,22 @@ All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] — 2026-11-04
+
+### Removed
+
+- **从公开仓库和 npm 包里移除本机的维护与发布流程**：`maintenance/`（周维护脚本、
+  维护提示词、会话归档、token 提醒）和 `scripts/release.mjs`（本机发布脚本）。
+  原因：公开仓库会把这些东西连同维护者本机路径、发布链路一起暴露出去，别人可以直接
+  照搬。它们现在只存在于维护者本机 `%USERPROFILE%\.dsh\creator-maintenance\`。
+- npm 包的 `files` 回到 `cordis.patch.yml` + `README.md` 两项；`check-pack` 恢复成只校验
+  `package.json` / `cordis.patch.yml` / `README.md`，且 `scripts/`、`test/`、`.github/`
+  不进 tarball。
+- 发布仍由维护者在本地用已登录的 npm 账号执行，不再走 GitHub Actions（也删掉了
+  tag 触发的 `publish` 工作流）。
+
+> 说明：`0.2.1` 和 `0.2.2` 的 tarball 里曾经包含上述脚本，内容以本版本为准。
+
 ## [0.2.2] — 2026-11-04
 
 ### Changed

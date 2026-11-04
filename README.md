@@ -105,19 +105,6 @@ npm 页面：<https://www.npmjs.com/package/dsh-diudiu-creator>
 - 上游 cordis 预设如果新增/删改行，本预设**不会自动跟随**——它是快照。升级前请对比 `dsh-web-app/presets/cordis.patch.yml`（在 `app.asar` 内，或 `dsh --dump-default-config` 输出）。
 - 提示：DSH 的配置装载器支持 YAML 锚点/别名，但**不支持**合并键 `<<`，不要用 `<<: *x` 复用配置。
 
-## 周维护自动化（可选）
-
-`maintenance/` 是一套 Windows 计划任务模板：每周六归档会话、检查上游 `preset-cordis`
-漂移，配置了 `DEEPSEEK_API_KEY` 时再跑一次无头 agent 做最小改动并推送发布。
-
-```powershell
-Copy-Item -Recurse -Force .\maintenance\* "$env:USERPROFILE\.dsh\creator-maintenance\"
-powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.dsh\creator-maintenance\register-tasks.ps1"
-```
-
-模板不会带上任何密钥：API key 放环境变量或 `deepseek-api-key.txt`；发布用**本机 npm 登录态**，
-`npm-token.json` 只记凭据轮换日期，两者都只留在本机。详见 [`maintenance/README.md`](maintenance/README.md)。
-
 ## 卸载
 
 ```bash
@@ -131,23 +118,10 @@ dsh plugin --profile desktop remove dsh-diudiu-creator
 ```bash
 npm install        # 只有测试用依赖 js-yaml
 npm test           # 解析 patch、校验预设身份/行结构/裁剪阈值
-npm run pack:check # 校验 npm pack 产物含 patch/README/maintenance，且不含测试与本地状态
-npm run release    # 本机发布：校验 → push main → npm publish → 打 tag 并推送
-npm run release -- --dry-run   # 只校验，不推送不发布
+npm run pack:check # 校验 npm pack 产物只含 patch + README
 ```
 
-**发布不走 GitHub Actions**：tag 触发的 publish 工作流历史 3 次全部失败在 `npm publish`
-鉴权（tag/版本一致性、测试、打包守卫都通过），2026-11-04 起改成本机 `npm run release`，
-用当前登录的 npm 账号发到 `https://registry.npmjs.org`。发布前先升 `package.json` 版本、
-补 `CHANGELOG.md`，然后：
-
-```bash
-npm login --registry https://registry.npmjs.org   # 只需一次
-npm run release
-```
-
-`release.mjs` 会拦下这些情况：工作区不干净、不在 `main`、版本已存在于 npm、tag 已存在、
-本机没登录 npm、Node < 20。
+发布由维护者在本地用 npm 账号执行（发布脚本与维护自动化不在本仓库，见 `CHANGELOG` 0.2.3）。
 
 真实装载验证（不需要桌面端，用隔离的 DSH_HOME）：
 
