@@ -21,6 +21,12 @@ All notable changes to this project are documented here. Format follows
   长会话里大工具输出更早被裁剪。
 - `engines.dsh` 提升到 `>=0.2.1-rc.1 <0.3.0`（新引用的三个包都在 0.2.1 里）。
 
+### Fixed
+
+- `npm test` 改成显式文件路径 `node --test test/patch.test.js`：Node 22 的 test runner
+  不再把目录参数（`node --test test`）递归展开，会报 `Cannot find module ...\test`，
+  导致 CI 的 Node 22 任务失败、`publish` 流程在测试步骤中断（0.2.0 的首次 tag 发布即因此失败）。
+
 ### Removed
 
 - **`cordis-skills` 预设整体删除**：本包只保留「接管内置行」这一条路，不再提供自造 id
