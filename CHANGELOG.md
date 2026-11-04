@@ -4,6 +4,24 @@ All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-11-04
+
+### Added
+
+- **`maintenance/` 模板目录**：把本机那套周维护自动化纳入版本管理——`weekly.ps1`
+  （归档 → 漂移检查 → 无头维护/发布）、`archive-sessions.ps1`、`check-drift.mjs`、
+  `maintenance-prompt.md`、`register-tasks.ps1`、`notify.ps1`、`token-reminder.ps1`、
+  `token-rotated.ps1`，以及 `npm-token.example.json` 与安装说明。
+  运行时数据（API key、`npm-token.json`、`log/`、`weeks/`）不入库，`check-pack` 现在会
+  拒绝把它们打进 tarball。
+
+### Fixed
+
+- **周维护不再无限制造「未分组」会话**：无头模式每次运行都会新建会话，而 CLI 会话不会
+  登记进 `workspace.json` 的 `sessionIds`，GUI 侧栏只能显示为「未分组」（2026-11-04 一天
+  就堆了 7 个）。`weekly.ps1` 改为首次运行后把 session id 写进 `weekly-session.txt`，
+  之后用 `--session-id` 续用同一会话；会话不存在时回退新建并重记，只在 `exit=0` 时记录。
+
 ## [0.2.0] — 2026-11-04
 
 ### Changed

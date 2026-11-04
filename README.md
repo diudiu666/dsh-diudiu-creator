@@ -105,6 +105,19 @@ npm 页面：<https://www.npmjs.com/package/dsh-diudiu-creator>
 - 上游 cordis 预设如果新增/删改行，本预设**不会自动跟随**——它是快照。升级前请对比 `dsh-web-app/presets/cordis.patch.yml`（在 `app.asar` 内，或 `dsh --dump-default-config` 输出）。
 - 提示：DSH 的配置装载器支持 YAML 锚点/别名，但**不支持**合并键 `<<`，不要用 `<<: *x` 复用配置。
 
+## 周维护自动化（可选）
+
+`maintenance/` 是一套 Windows 计划任务模板：每周六归档会话、检查上游 `preset-cordis`
+漂移，配置了 `DEEPSEEK_API_KEY` 时再跑一次无头 agent 做最小改动并推送发布。
+
+```powershell
+Copy-Item -Recurse -Force .\maintenance\* "$env:USERPROFILE\.dsh\creator-maintenance\"
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.dsh\creator-maintenance\register-tasks.ps1"
+```
+
+模板不会带上任何密钥：API key 放环境变量或 `deepseek-api-key.txt`，npm token 只记轮换日期
+（`npm-token.json`），两者都只留在本机。详见 [`maintenance/README.md`](maintenance/README.md)。
+
 ## 卸载
 
 ```bash
@@ -118,7 +131,7 @@ dsh plugin --profile desktop remove dsh-diudiu-creator
 ```bash
 npm install        # 只有测试用依赖 js-yaml
 npm test           # 解析 patch、校验预设身份/行结构/裁剪阈值
-npm run pack:check # 校验 npm pack 产物只含 patch + README
+npm run pack:check # 校验 npm pack 产物含 patch/README/maintenance，且不含测试与本地状态
 ```
 
 真实装载验证（不需要桌面端，用隔离的 DSH_HOME）：
