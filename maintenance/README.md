@@ -31,8 +31,8 @@ powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.dsh\creator-maintena
    复制到 `weeks/<日期>/sessions/`，生成 `index.md`（只复制、不删除）；
 2. `check-drift.mjs` 对比 DSH 上游 `preset-cordis` 与本仓库 `cordis.patch.yml`；
 3. 有 `DEEPSEEK_API_KEY` 时，把 `maintenance-prompt.md` 交给无头 agent（有变更才
-   commit / tag / push，由 GitHub Actions 的 `publish` 工作流发 npm）；没 key 时只归档 +
-   漂移检查 + 弹窗提醒。
+   升版本、commit，再在本机跑 `node scripts/release.mjs` 发布：测试 → push → npm publish →
+   打 tag）；没 key 时只归档 + 漂移检查 + 弹窗提醒。
 
 ## 会话复用（0.2.1 起）
 
@@ -62,4 +62,5 @@ powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.dsh\creator-maintena
 ## 安全
 
 - `deepseek-api-key.txt`、`npm-token.json`、`log/`、`weeks/` 都是本机私有数据，**不要提交**；
-- 真实 NPM_TOKEN 只放在 GitHub 仓库的 Actions secret 里，本机只记轮换日期。
+- 发布用的是**本机 npm 登录态**（`npm whoami --registry https://registry.npmjs.org` 有输出即可），
+  不再用 GitHub Actions secret；本机的 `npm-token.json` 只用于记录凭据轮换日期和临期提醒。

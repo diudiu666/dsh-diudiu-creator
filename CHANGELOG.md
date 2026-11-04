@@ -4,6 +4,21 @@ All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] — 2026-11-04
+
+### Changed
+
+- **发布改成本机 npm 账号，不再走 GitHub Actions**：删除 tag 触发的
+  `.github/workflows/publish.yml`。该工作流历史 3 次运行（v0.2.0 ×2、v0.2.1）全部在
+  `npm publish` 这一步失败，而 tag/版本一致性、`npm test`、`npm run pack:check` 都是
+  success——是凭据问题，不是构建问题。
+- 新增 `npm run release`（`scripts/release.mjs`）：工作区干净 + 在 `main` + 版本没发过 +
+  tag 不存在 + `npm whoami` 有登录 → 跑结构测试与打包守卫 → push `main` →
+  `npm publish --registry https://registry.npmjs.org --access public` → 打注解 tag 并推送。
+  加 `-- --dry-run` 只校验不发布。
+- 维护自动化同步：`maintenance/maintenance-prompt.md` 第 4 步改为在本机发布；
+  `token-reminder.ps1` 的提醒文案改指本机 npm 凭据，不再提 GitHub Actions secret。
+
 ## [0.2.1] — 2026-11-04
 
 ### Added

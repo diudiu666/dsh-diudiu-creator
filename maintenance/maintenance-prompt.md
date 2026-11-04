@@ -6,7 +6,7 @@
 {{DRIFT}}
 
 规则：
-- 只改仓库内的文件；不删除文件；不改 `.github/workflows/publish.yml`；不动 README 的大段正文。
+- 只改仓库内的文件；不删除文件；不动 README 的大段正文。
 - 不做大改；不确定是否安全时就不改，直接输出结论。
 - git 操作禁止 `git add .` / `git add -A`，只 add 本次改动的具体文件。
 
@@ -22,6 +22,9 @@
    - 更新 `CHANGELOG.md`（新版本段落，注明“自动维护”）
    - `package.json` 的 version 做 patch +1
    - `git add` 具体文件；`git commit -m "chore(release): 自动维护 <版本> [auto-maintenance]"`
-   - `git tag v<版本>`；`git push origin main`；`git push origin v<版本>`
-   - 推送后 GitHub Actions 的 publish 工作流会跑测试并 `npm publish`（需要 NPM_TOKEN 有效）
+   - 在本机发布（仓库不再走 GitHub Actions，本机已登录 npm）：
+     `node scripts/release.mjs`
+     （需要 Node ≥ 20；PATH 上的 `node` 太旧时用 `%APPDATA%\nvm\v22.22.3\node.exe scripts/release.mjs`）
+     它会跑测试与打包守卫 → push `main` → `npm publish --registry https://registry.npmjs.org --access public` → 打 tag `v<版本>` 并推送
+   - 如果 `npm whoami` 没输出（登录过期），停下并输出「本机 npm 未登录，需人工 npm login」
 5. 输出简要总结：是否改动、改了哪些文件、新版本号、推送结果、失败原因（如有）。

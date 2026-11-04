@@ -2,5 +2,5 @@
   "rotatedAt": "2026-10-26",
   "lifetimeDays": 90,
   "remindDaysBefore": 10,
-  "_note": "复制成 npm-token.json 后把 rotatedAt 改成真实生成日期；每次在 GitHub 更新 NPM_TOKEN 后运行 token-rotated.ps1 刷新。"
+  "_note": "复制成 npm-token.json 后把 rotatedAt 改成真实生成日期；发布用本机 npm 登录态，这里只用于记录凭据轮换日期与临期提醒，每次重新 npm login 后运行 token-rotated.ps1 刷新。"
 }

@@ -115,8 +115,8 @@ Copy-Item -Recurse -Force .\maintenance\* "$env:USERPROFILE\.dsh\creator-mainten
 powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.dsh\creator-maintenance\register-tasks.ps1"
 ```
 
-模板不会带上任何密钥：API key 放环境变量或 `deepseek-api-key.txt`，npm token 只记轮换日期
-（`npm-token.json`），两者都只留在本机。详见 [`maintenance/README.md`](maintenance/README.md)。
+模板不会带上任何密钥：API key 放环境变量或 `deepseek-api-key.txt`；发布用**本机 npm 登录态**，
+`npm-token.json` 只记凭据轮换日期，两者都只留在本机。详见 [`maintenance/README.md`](maintenance/README.md)。
 
 ## 卸载
 
@@ -132,7 +132,22 @@ dsh plugin --profile desktop remove dsh-diudiu-creator
 npm install        # 只有测试用依赖 js-yaml
 npm test           # 解析 patch、校验预设身份/行结构/裁剪阈值
 npm run pack:check # 校验 npm pack 产物含 patch/README/maintenance，且不含测试与本地状态
+npm run release    # 本机发布：校验 → push main → npm publish → 打 tag 并推送
+npm run release -- --dry-run   # 只校验，不推送不发布
 ```
+
+**发布不走 GitHub Actions**：tag 触发的 publish 工作流历史 3 次全部失败在 `npm publish`
+鉴权（tag/版本一致性、测试、打包守卫都通过），2026-11-04 起改成本机 `npm run release`，
+用当前登录的 npm 账号发到 `https://registry.npmjs.org`。发布前先升 `package.json` 版本、
+补 `CHANGELOG.md`，然后：
+
+```bash
+npm login --registry https://registry.npmjs.org   # 只需一次
+npm run release
+```
+
+`release.mjs` 会拦下这些情况：工作区不干净、不在 `main`、版本已存在于 npm、tag 已存在、
+本机没登录 npm、Node < 20。
 
 真实装载验证（不需要桌面端，用隔离的 DSH_HOME）：
 
