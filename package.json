@@ -1,6 +1,6 @@
 {
   "name": "dsh-diudiu-creator",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "为 DSH 增加「创造模式」agent 预设：原地修好内置 cordis 预设的 skill-filesystem（去掉指向 app.asar 内部路径的 customSkillDirs），并保留预设 id cordis，让 dsh-ops 的 cordis 模式与 ops_discover_tools 按需发现自动接上。An agent preset that restores default skill roots and wires the dsh-ops discovery surface.",
   "type": "module",
   "files": [

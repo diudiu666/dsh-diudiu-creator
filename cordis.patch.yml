@@ -11,10 +11,15 @@
 #      才能自动接上 dsh-ops 的 cordis 模式（ops_read_files / ops_grep / ops_bash
 #      替换官方 read/glob/grep/pwsh）与 `ops_discover_tools` 按需发现入口。
 #
-#    其余内容是对 DSH 0.2.1-rc.5 内置 cordis 预设的忠实拷贝，仅两处有意偏离：
+#    其余内容是对 DSH 0.2.2-rc.1 内置 cordis 预设的忠实拷贝，仅两处有意偏离：
 #      - tool-result-pruner 阈值收紧到 4096/2048/1024（原 8192/4096/1024），
 #        长会话里大输出更早被裁剪；
-#      - subagent 两行显式保留 `backgroundMode: continuable`（上游省略，靠默认值）。
+#      - `skill-filesystem` 不再带 `customSkillDirs`（见上）。
+#
+# 0.2.4 起与 0.2.2-rc.1 对齐：`tool-subagent-control` 不再导出 `./list-agents`
+# 子路径（`list_agents` 已并入主包），故删掉 `tool-subagent-list-agents` 行 ——
+# 否则该行 import 直接失败，整个预设加载不出来；`modelSelectionSettings` 已更名为
+# `modelSelection`，并新增 `modelDiscovery`；`backgroundMode` 这个键在 0.2.2 已不存在。
 #
 # 0.2.0 起不再保留 0.1.x 的 `cordis-skills` 自造 id：历史会话无法再按该 id 恢复
 # （registry 的 resolve() 找不到 id 会抛 agent-preset/not-found），需要旧会话内容时
@@ -103,21 +108,18 @@
         config:
           - id: tool-subagent-control
             name: '@deepseek-ai/dsh-tool-subagent-control'
-          - id: tool-subagent-list-agents
-            name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
           - id: tool-subagent
             name: '@deepseek-ai/dsh-tool-subagent'
             config:
               provider: spawn
               toolName: subagent
-              modelSelectionSettings: true
-              backgroundMode: continuable
+              modelSelection: true
+              modelDiscovery: true
           - id: tool-subagent-fork
             name: '@deepseek-ai/dsh-tool-subagent'
             config:
               provider: fork
               toolName: subagent_fork
-              backgroundMode: continuable
           - id: workflow-ptc
             name: '@deepseek-ai/dsh-workflow-ptc'
             config:

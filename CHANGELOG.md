@@ -4,6 +4,23 @@ All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] — 2026-11-08
+
+### Fixed
+
+- **创造模式在 DSH 0.2.2 上加载失败。** `@deepseek-ai/dsh-tool-subagent-control`
+  从 0.2.2 起不再导出 `./list-agents` 子路径（`list_agents` 已并入主包），预设里
+  却还留着 `tool-subagent-list-agents` 行：该行 import 直接抛错，整个预设加载
+  不出来。已删除该行，并加测试禁止它被重新引入。
+- **subagent 的模型选择器不显示。** `dsh-tool-subagent` 在 0.2.2 把
+  `modelSelectionSettings` 改名为 `modelSelection`（另有 `modelDiscovery`），
+  且删除了 `backgroundMode`。旧键会被静默忽略，所以两行 subagent 配置已按新
+  schema 重写，同样加了回归测试。
+
+### Changed
+
+- 预设基线从 DSH `0.2.1-rc.5` 对齐到 `0.2.2-rc.1`。
+
 ## [0.2.3] — 2026-11-04
 
 ### Removed

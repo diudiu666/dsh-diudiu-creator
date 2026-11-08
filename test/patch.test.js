@@ -34,7 +34,7 @@ const preset = override?.config;
 test("the package declares the patch as its bundle layer", () => {
 	assert.equal(pkg.dsh?.bundle?.patch, "./cordis.patch.yml");
 	assert.ok(pkg.files?.includes("cordis.patch.yml"), "files must ship the patch");
-	assert.equal(pkg.version, "0.2.3");
+	assert.equal(pkg.version, "0.2.4");
 	assert.equal(pkg.dsh?.engines?.dsh, ">=0.2.1-rc.1 <0.3.0");
 });
 
@@ -102,6 +102,37 @@ test("presets this project no longer ships stay gone", () => {
 	for (const id of ["tool-subagent-codex", "tool-subagent-claude-code", "tool-ralph"]) {
 		assert.ok(!ids.includes(id), `row ${id} was removed upstream; do not reintroduce it`);
 	}
+	// 0.2.2 folds `list_agents` into dsh-tool-subagent-control and drops the
+	// `./list-agents` export, so a row naming that subpath fails to import and
+	// takes the whole preset down. It lives in the delegation group.
+	for (const group of preset.plugins.filter((p) => p.group === true)) {
+		const childIds = group.config.map((p) => p.id);
+		assert.ok(
+			!childIds.includes("tool-subagent-list-agents"),
+			"tool-subagent-list-agents targets a removed subpath export; list_agents now ships inside tool-subagent-control",
+		);
+	}
+});
+
+test("the subagent rows use the 0.2.2 config keys", () => {
+	// dsh-tool-subagent's schema in 0.2.2-rc.1: provider, toolName,
+	// modelSelection, modelDiscovery, agentOptions. `modelSelectionSettings` was
+	// renamed and `backgroundMode` no longer exists, so passing either silently
+	// loses the subagent model picker.
+	const delegation = preset.plugins.find((p) => p.id === "delegation");
+	const rows = new Map(delegation.config.map((p) => [p.id, p]));
+	for (const id of ["tool-subagent", "tool-subagent-fork"]) {
+		const config = rows.get(id)?.config ?? {};
+		assert.equal(config.modelSelectionSettings, undefined, `${id}: modelSelectionSettings is the old key`);
+		assert.equal(config.backgroundMode, undefined, `${id}: backgroundMode no longer exists in 0.2.2`);
+		assert.equal(
+			Object.keys(config).some((key) => !["provider", "toolName", "modelSelection", "modelDiscovery", "agentOptions"].includes(key)),
+			false,
+			`${id}: unexpected config key (schema is strict about meaning, lax about unknown keys)`,
+		);
+	}
+	assert.equal(rows.get("tool-subagent").config.modelSelection, true);
+	assert.equal(rows.get("tool-subagent").config.modelDiscovery, true);
 });
 
 test("the tool result pruner is tighter than the shipped default", () => {
