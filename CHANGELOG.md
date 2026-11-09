@@ -4,6 +4,20 @@ All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] — 2026-11-09
+
+### Fixed
+
+- **`tool-fs` 行补齐 `applyPatch: false`。** DSH `0.2.2-rc.1` 的内置 `cordis` 预设已在
+  `tool-fs` 上带 `applyPatch: false`，本包快照漏了这一段，`check-drift.mjs` /
+  `dsh --dump-config` 每次都会把它当成漂移报出来。现与上游对齐，并加回归测试固定该键。
+
+### Note
+
+- npm 上当前最高版本是 `0.2.3`，`0.2.4` 已提交（2026-11-08）但从未发布。本次把 `0.2.4`
+  的修复与上面的 `tool-fs` 补齐一起作为 `0.2.5` 发布，因此 npm 版本会出现 `0.2.3 → 0.2.5`
+  的跳号。
+
 ## [0.2.4] — 2026-11-08
 
 ### Fixed

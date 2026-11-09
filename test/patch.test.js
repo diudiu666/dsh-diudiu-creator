@@ -34,7 +34,7 @@ const preset = override?.config;
 test("the package declares the patch as its bundle layer", () => {
 	assert.equal(pkg.dsh?.bundle?.patch, "./cordis.patch.yml");
 	assert.ok(pkg.files?.includes("cordis.patch.yml"), "files must ship the patch");
-	assert.equal(pkg.version, "0.2.4");
+	assert.equal(pkg.version, "0.2.5");
 	assert.equal(pkg.dsh?.engines?.dsh, ">=0.2.1-rc.1 <0.3.0");
 });
 
@@ -93,6 +93,11 @@ test("the preset tracks the shipped cordis rows it has to keep in sync", () => {
 	]) {
 		assert.ok(ids.includes(id), `expected row ${id}`);
 	}
+	// 0.2.2-rc.1 ships `applyPatch: false` on tool-fs; the copy must stay faithful,
+	// otherwise `dsh --dump-config` drift checks flag the row on every run.
+	const fsRow = preset.plugins.find((p) => p.id === "tool-fs");
+	assert.deepEqual(fsRow?.config, { applyPatch: false }, "tool-fs must mirror the shipped applyPatch:false");
+
 	const groups = preset.plugins.filter((p) => p.group === true).map((p) => p.id);
 	assert.deepEqual(groups.sort(), ["compaction", "delegation", "planning"]);
 });
